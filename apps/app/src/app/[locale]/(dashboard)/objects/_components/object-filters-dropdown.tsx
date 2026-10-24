@@ -8,7 +8,7 @@ import { Switch } from "@v1/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { Filter, LayoutGrid, List, SlidersHorizontal } from "lucide-react";
-import { useId } from "react";
+import { Fragment, useId, useState } from "react";
 import type {
   ObjectDisplayStatus,
   ObjectPhotographFilter,
@@ -18,6 +18,7 @@ import { useScopedI18n } from "@/locales/client";
 import { CatalogFilterSelect } from "./catalog-filter-select";
 import type { ColumnConfig } from "./column-config";
 import { LocationTreeFilter } from "./location-tree-filter";
+import { madeYearBound } from "./use-collection-catalog-list";
 import type { ViewMode } from "./view-toggle";
 
 interface LocationPathItem {
@@ -49,6 +50,9 @@ export interface ObjectFiltersDropdownValue {
   photograph: ObjectPhotographFilter;
   catalogedFrom: string;
   catalogedTo: string;
+  /** Years as written: "1850", or "-500" for 500 BC. */
+  madeFrom: string;
+  madeTo: string;
 }
 
 interface FacetValue {
@@ -193,6 +197,8 @@ export function ObjectFiltersDropdown({
       filters.photograph,
       filters.catalogedFrom,
       filters.catalogedTo,
+      filters.madeFrom,
+      filters.madeTo,
     ].filter((value) => value !== "").length +
     (advancedConditionCount > 0 ? 1 : 0);
 
@@ -281,6 +287,11 @@ export function ObjectFiltersDropdown({
               facets={facets}
               onChange={onChange}
             />
+            <MadeRangeFilter
+              madeFrom={filters.madeFrom}
+              madeTo={filters.madeTo}
+              onChange={onChange}
+            />
             <CatalogedRangeFilter
               from={filters.catalogedFrom}
               to={filters.catalogedTo}
@@ -339,6 +350,8 @@ export function ObjectFiltersDropdown({
                 photograph: "",
                 catalogedFrom: "",
                 catalogedTo: "",
+                madeFrom: "",
+                madeTo: "",
                 ...(!hideCollectionGroupFilter
                   ? { collectionGroupId: "" }
                   : {}),
@@ -468,6 +481,162 @@ function FacetFilters({
         onChange={(photograph) => onChange({ photograph })}
       />
     </>
+  );
+}
+
+type MadeEra = "ad" | "bc";
+
+interface MadeYearDraft {
+  year: string;
+  era: MadeEra;
+}
+
+interface MadeRangeDraft {
+  from: MadeYearDraft;
+  to: MadeYearDraft;
+  /** The range in the URL when it was last edited. */
+  base: { madeFrom: string; madeTo: string };
+}
+
+/** A year from the URL as its year and era inputs show it. */
+function madeYearDraft(value: string): MadeYearDraft {
+  return value.startsWith("-")
+    ? { year: value.slice(1), era: "bc" }
+    : { year: value, era: "ad" };
+}
+
+/**
+ * The URL value for a year as entered: "" when left empty, null unless it is
+ * a whole year from 1 to 9999.
+ */
+function madeYearValue({ year, era }: MadeYearDraft) {
+  const text = year.trim();
+  if (!text) return "";
+  if (!/^\d{1,4}$/.test(text) || Number(text) < 1) return null;
+  return `${era === "bc" ? "-" : ""}${Number(text)}`;
+}
+
+/** Why a range as entered is not applied, if it is not. */
+function madeRangeProblem(madeFrom: string | null, madeTo: string | null) {
+  if (madeFrom === null || madeTo === null) return "year";
+  const from = madeYearBound(madeFrom);
+  const to = madeYearBound(madeTo);
+  return from !== undefined && to !== undefined && from > to
+    ? "order"
+    : undefined;
+}
+
+/**
+ * When objects were made, as an inclusive range of years either side of
+ * 1 AD. A range applies once both years are valid and in order.
+ */
+function MadeRangeFilter({
+  madeFrom,
+  madeTo,
+  onChange,
+}: {
+  madeFrom: string;
+  madeTo: string;
+  onChange: (filters: Partial<ObjectFiltersDropdownValue>) => void;
+}) {
+  const t = useScopedI18n("objects");
+  const id = useId();
+  const [edited, setEdited] = useState<MadeRangeDraft | null>(null);
+  // An edit stands while the URL holds the range it last applied; Clear all
+  // starts again from the URL.
+  const draft: MadeRangeDraft =
+    edited?.base.madeFrom === madeFrom && edited.base.madeTo === madeTo
+      ? edited
+      : {
+          from: madeYearDraft(madeFrom),
+          to: madeYearDraft(madeTo),
+          base: { madeFrom, madeTo },
+        };
+  const values = {
+    from: madeYearValue(draft.from),
+    to: madeYearValue(draft.to),
+  };
+  const problem = madeRangeProblem(values.from, values.to);
+  const errorId = `${id}-error`;
+
+  const update = (side: "from" | "to", change: Partial<MadeYearDraft>) => {
+    const next: MadeRangeDraft = {
+      ...draft,
+      [side]: { ...draft[side], ...change },
+    };
+    const nextFrom = madeYearValue(next.from);
+    const nextTo = madeYearValue(next.to);
+    if (
+      nextFrom !== null &&
+      nextTo !== null &&
+      !madeRangeProblem(nextFrom, nextTo)
+    ) {
+      next.base = { madeFrom: nextFrom, madeTo: nextTo };
+      if (nextFrom !== madeFrom || nextTo !== madeTo) {
+        onChange({ madeFrom: nextFrom, madeTo: nextTo });
+      }
+    }
+    setEdited(next);
+  };
+
+  const rows = [
+    { side: "from", label: t("filters.madeFrom") },
+    { side: "to", label: t("filters.madeTo") },
+  ] as const;
+
+  return (
+    <fieldset className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-center gap-2">
+      <legend className="sr-only">{t("filters.madeRange")}</legend>
+      <span id={`${id}-era`} hidden>
+        {t("filters.era")}
+      </span>
+      {rows.map(({ side, label }) => {
+        const invalid = values[side] === null || problem === "order";
+        return (
+          <Fragment key={side}>
+            <label
+              id={`${id}-${side}-label`}
+              htmlFor={`${id}-${side}`}
+              className="text-xs text-muted-foreground"
+            >
+              {label}
+            </label>
+            <div className="flex min-w-0 gap-1">
+              <Input
+                id={`${id}-${side}`}
+                inputMode="numeric"
+                autoComplete="off"
+                value={draft[side].year}
+                aria-invalid={invalid || undefined}
+                aria-describedby={invalid ? errorId : undefined}
+                onChange={(event) => update(side, { year: event.target.value })}
+                className="h-7 min-w-0 px-2 text-xs"
+              />
+              <select
+                aria-labelledby={`${id}-${side}-label ${id}-era`}
+                value={draft[side].era}
+                onChange={(event) =>
+                  update(side, {
+                    era: event.target.value === "bc" ? "bc" : "ad",
+                  })
+                }
+                className="h-7 shrink-0 rounded-lg border border-input bg-background px-1.5 text-xs dark:border-border"
+              >
+                <option value="ad">{t("filters.eraAd")}</option>
+                <option value="bc">{t("filters.eraBc")}</option>
+              </select>
+            </div>
+          </Fragment>
+        );
+      })}
+      {problem ? (
+        <p id={errorId} className="col-span-2 text-xs text-destructive">
+          {problem === "order"
+            ? t("filters.madeRangeReversed")
+            : t("filters.madeYearInvalid")}
+        </p>
+      ) : null}
+    </fieldset>
   );
 }
 

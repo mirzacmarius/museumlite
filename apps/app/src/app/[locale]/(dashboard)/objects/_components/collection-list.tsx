@@ -2,6 +2,7 @@
 
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { ProductionDateSource } from "@v1/backend/convex/utils/productionDates";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -13,9 +14,13 @@ import { type Ref, useEffect, useRef } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useListReturnPath } from "@/hooks/use-return-path";
+import {
+  formatDateMade,
+  type ProductionDateLabels,
+} from "@/lib/production-date-format";
 import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { withReturnPath } from "@/lib/return-path";
-import { useI18n, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { ObjectCatalogTableSkeleton } from "../loading";
 import { OBJECTS_SCROLL_PRELOAD_MARGIN } from "./collection-catalog-constants";
 import {
@@ -44,6 +49,8 @@ interface CollectionListProps {
     locationPath?: string;
     currentLocationId?: Id<"locations">;
     status: string;
+    dateCreated?: string;
+    dateCreatedEdtf?: string;
     _creationTime: number;
     matchedField?: CollectionListItem["matchedField"];
   }>;
@@ -72,6 +79,22 @@ interface CollectionListProps {
   listRef: Ref<HTMLElement>;
 }
 
+/** An Object's date made as the catalog lists it, in the app language. */
+function useDateMadeText() {
+  const t = useScopedI18n("provenance.dates");
+  const locale = useCurrentLocale();
+  const labels: ProductionDateLabels = {
+    decade: (year) => t("decade", { year }),
+    circa: (date) => t("circa", { date }),
+    notAfter: (date) => t("notAfter", { date }),
+    notBefore: (date) => t("notBefore", { date }),
+    uncertain: (date) => t("uncertain", { date }),
+    range: (start, end) => t("range", { start, end }),
+  };
+  return (source: ProductionDateSource) =>
+    formatDateMade(source, locale, labels);
+}
+
 export function CollectionList({
   organizationId,
   collections,
@@ -93,6 +116,7 @@ export function CollectionList({
   const tList = useScopedI18n("listState");
   const returnPath = useListReturnPath(OBJECT_LIST_KEYS);
   const common = useScopedI18n("common");
+  const dateMadeText = useDateMadeText();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isAutoLoadingRef = useRef(false);
@@ -247,6 +271,7 @@ export function CollectionList({
                   objectType: item.objectType,
                   primaryImageUrl: item.primaryImageUrl,
                   status: item.status,
+                  dateMade: dateMadeText(item),
                   matchedField: item.matchedField,
                 }))}
                 organizationId={organizationId}
@@ -286,6 +311,11 @@ export function CollectionList({
                       {t("columnConfig.objectType")}
                     </th>
                   ) : null}
+                  {isColumnVisible(columns, "dateMade") ? (
+                    <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
+                      {t("columnConfig.dateMade")}
+                    </th>
+                  ) : null}
                   {isColumnVisible(columns, "location") ? (
                     <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
                       {tRoot("objects.filters.location")}
@@ -309,6 +339,7 @@ export function CollectionList({
                   <CollectionTableRow
                     key={item._id}
                     item={item as CollectionListItem}
+                    dateMade={dateMadeText(item)}
                     organizationId={organizationId}
                     columns={columns}
                     isSelected={selectedIds.has(item._id as Id<"collections">)}
@@ -344,6 +375,7 @@ export function CollectionList({
 
 function CollectionTableRow({
   item,
+  dateMade,
   organizationId,
   columns,
   isSelected,
@@ -352,6 +384,8 @@ function CollectionTableRow({
   returnPath,
 }: {
   item: CollectionListItem;
+  /** The date made as listed; undefined when none is recorded. */
+  dateMade: string | undefined;
   organizationId: Id<"organizations">;
   columns: ColumnConfig[];
   isSelected: boolean;
@@ -455,6 +489,14 @@ function CollectionTableRow({
               }
             })()}
           </span>
+        </td>
+      ) : null}
+      {isColumnVisible(columns, "dateMade") ? (
+        <td
+          className="max-w-[160px] truncate px-4 py-3 text-muted-foreground"
+          title={dateMade}
+        >
+          {dateMade ?? <span className="text-muted-foreground/60">-</span>}
         </td>
       ) : null}
       {isColumnVisible(columns, "location") ? (

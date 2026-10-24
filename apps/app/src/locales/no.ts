@@ -3192,6 +3192,15 @@ export default {
       advancedSearchActive: "Avansert søk: {count}",
       advancedChip: "Avansert",
       advancedConditions: "Regler: {count}",
+      madeRange: "Datering",
+      madeFrom: "Datert fra",
+      madeTo: "Datert til",
+      era: "Tidsregning",
+      eraAd: "e.Kr.",
+      eraBc: "f.Kr.",
+      madeYearInvalid: "Skriv inn et helt årstall fra 1 til 9999.",
+      madeRangeReversed:
+        "Skriv inn et startår som er likt med eller før sluttåret.",
     },
     search: {
       matchedIn: "Treff i {field}",
@@ -3347,6 +3356,7 @@ export default {
       location: "Plassering",
       objectType: "Objekttype",
       status: "Status",
+      dateMade: "Datering",
     },
     bulkActions: {
       objectsSelected: "Valgte objekter: {count}",
@@ -5923,6 +5933,8 @@ export default {
       newest: "Nyeste først",
       oldest: "Eldste først",
       identifier: "Identifikator (A–Å)",
+      madeEarliest: "Datering, eldste først",
+      madeLatest: "Datering, nyeste først",
     },
     allTypes: "Alle typer",
   },
