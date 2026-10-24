@@ -504,17 +504,30 @@ test("filters that narrow nothing are refused, so an edit never takes every Obje
     operation: "set" as const,
     value: "Roman",
   };
-  // What a Dashboard link, a cleared field or an empty advanced group leaves.
+  // What a Dashboard link, a cleared or blank field or an empty advanced
+  // group leaves. "Is not" a blank value would otherwise match everything.
   const narrowNothing: CatalogFilters[] = [
     {},
     { inventoryMetricScope: "owned" },
     { includeDeaccessioned: true },
     { search: "   " },
     { objectType: "", culture: "" },
+    { culture: " ", period: " ", materials: "\t", condition: " " },
     { locationIds: [] },
     {
       advancedFilters: [{ operator: "AND", filters: [] }],
       filterCombinations: "OR",
+    },
+    {
+      advancedFilters: [
+        {
+          operator: "AND",
+          filters: [
+            { field: "title", operator: "ne", value: " " },
+            { field: "culture", operator: "ne", value: [" ", ""] },
+          ],
+        },
+      ],
     },
   ];
   for (const filters of narrowNothing) {
@@ -589,6 +602,40 @@ test("every catalog filter narrows it except the inventory scope and the options
   for (const [field, { value, narrows }] of Object.entries(oneOfEach)) {
     expect(narrowsCatalog({ [field]: value }), field).toBe(narrows);
   }
+});
+
+test("an edit started before its filters had to narrow the catalog can be stopped but not resumed", async () => {
+  const s = await setup();
+  const bowl = await s.create({ accessionNumber: "1", title: "Bowl" });
+  const jobId = await s.t.run((ctx) =>
+    ctx.db.insert("bulkFieldEdits", {
+      organizationId: s.organizationId,
+      requestedBy: s.userId,
+      status: "failed",
+      scope: { kind: "filters", filters: { inventoryMetricScope: "owned" } },
+      edit: { field: "culture", operation: "set", value: "Roman" },
+      cursor: null,
+      position: 0,
+      checkpoint: 0,
+      attempts: 1,
+      checked: 0,
+      changed: 0,
+      skipped: 0,
+      failure: "Write failed",
+      startedAt: 1,
+      updatedAt: 1,
+      finishedAt: 1,
+    }),
+  );
+
+  expect(
+    await refusalCode(s.user.mutation(api.bulkFieldEdits.resume, { jobId })),
+  ).toBe("FILTER_REQUIRED");
+  await s.user.mutation(api.bulkFieldEdits.cancel, { jobId });
+  expect(await s.user.query(api.bulkFieldEdits.get, { jobId })).toMatchObject({
+    status: "cancelled",
+  });
+  expect(await s.field(bowl, "culture")).toBeUndefined();
 });
 
 test("replacement text is written as typed, even with dollar signs", async () => {

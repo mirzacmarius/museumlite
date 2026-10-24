@@ -431,8 +431,9 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     setFilters,
     resetFilters,
     isFiltered: hasActiveFilters,
-    // A Dashboard link's inventory scope or "All statuses" alone matches
-    // every Object, so editing all matching ones needs a search or filter.
+    // Editing every matching Object needs a search or filter staff can see:
+    // a Dashboard link's inventory scope has no chip, "All statuses" and
+    // blank values narrow nothing.
     canEditAllMatching: narrowsCatalog(exportFilters),
     sort: catalogView.state.sort,
     setSort: (sort: ObjectSort) => catalogView.update({ sort }),

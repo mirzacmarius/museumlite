@@ -71,8 +71,18 @@ test("Edit all matching objects needs a search or filter, not just a Dashboard l
     {},
     { inventoryScope: "owned" },
     { status: "all" },
+    { status: "deaccessioned" },
     { search: "   " },
+    { culture: " " },
     { advancedFilters: [{ operator: "AND", filters: [] }] },
+    {
+      advancedFilters: [
+        {
+          operator: "AND",
+          filters: [{ field: "title", operator: "ne", value: " " }],
+        },
+      ],
+    },
   ];
   for (const filters of everyObject) {
     expect(offersEditAll(filters), JSON.stringify(filters)).toBe(false);

@@ -361,6 +361,9 @@ export const resume = mutation({
         "EDIT_NOT_RESUMABLE",
         "Only a failed or stalled bulk edit can be resumed",
       );
+    // An edit started before its filters had to narrow the catalog can only be stopped.
+    if (job.scope.kind === "filters")
+      requireNarrowingFilters(job.scope.filters);
     // A failed edit waits while another one runs: one at a time per Organization.
     if (job.status === "failed") {
       const running = await ctx.db

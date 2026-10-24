@@ -138,10 +138,24 @@ export const catalogFiltersValidator = v.object(catalogFilterFields);
 export type CatalogFilters = Infer<typeof catalogFiltersValidator>;
 
 /**
- * True when a search or filter someone chose narrows the catalog. The
- * inventory scope a Dashboard link sets is not shown among the filters, and
- * `includeDeaccessioned` and `filterCombinations` only widen or join them,
- * so none of these counts. Editing every matching Object needs one that does.
+ * Whether a condition tests anything. One left blank does not, so the catalog
+ * leaves it out, as it does a group without conditions.
+ */
+export function conditionHasValue(
+  condition: Pick<AdvancedFilterCondition, "value">,
+) {
+  const values: unknown[] = Array.isArray(condition.value)
+    ? condition.value
+    : [condition.value];
+  return values.some((value) => value !== null && String(value).trim() !== "");
+}
+
+/**
+ * True when a search or filter someone chose narrows the catalog. A blank
+ * value narrows nothing. The inventory scope a Dashboard link sets is not
+ * shown among the filters, and `includeDeaccessioned` and
+ * `filterCombinations` only widen or join them, so none of these counts.
+ * Editing every matching Object needs one that does.
  */
 export function narrowsCatalog(filters: CatalogFilters) {
   return (
@@ -155,8 +169,8 @@ export function narrowsCatalog(filters: CatalogFilters) {
       filters.period,
       filters.materials,
       filters.condition,
-      filters.search?.trim(),
-    ].some(Boolean) ||
+      filters.search,
+    ].some((value) => Boolean(value?.trim())) ||
     [
       filters.hasImage,
       filters.catalogedFrom,
@@ -164,7 +178,9 @@ export function narrowsCatalog(filters: CatalogFilters) {
       filters.madeFrom,
       filters.madeTo,
     ].some((value) => value !== undefined) ||
-    (filters.advancedFilters ?? []).some((group) => group.filters.length > 0)
+    (filters.advancedFilters ?? []).some((group) =>
+      group.filters.some(conditionHasValue),
+    )
   );
 }
 
