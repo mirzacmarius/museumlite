@@ -52,6 +52,8 @@ export function NotificationBell() {
 
   const notifications = notificationCenter?.notifications ?? [];
   const unreadCountValue = unreadCount ?? notificationCenter?.unreadCount ?? 0;
+  // The unread count stops at 10, so anything above nine reads as 9+.
+  const unreadLabel = unreadCountValue > 9 ? "9+" : unreadCountValue;
 
   const handleMarkRead = async (notificationId: string) => {
     await markRead({ notificationId: notificationId as Id<"notifications"> });
@@ -73,7 +75,7 @@ export function NotificationBell() {
           aria-label={
             unreadCountValue > 0
               ? translate("untranslatedComponents.labels.notificationsUnread", {
-                  count: unreadCountValue,
+                  count: unreadLabel,
                 })
               : translate("untranslatedComponents.labels.notifications")
           }
@@ -84,7 +86,7 @@ export function NotificationBell() {
               aria-hidden="true"
               className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground"
             >
-              {unreadCountValue > 9 ? "9+" : unreadCountValue}
+              {unreadLabel}
             </span>
           )}
         </Button>

@@ -214,6 +214,60 @@ describe("each logical event notifies once", () => {
       "sla_breach_loan",
     ]);
   });
+
+  test("each overdue item of a workflow type notifies its approvers once, warnings included", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    const t = createConvexTest();
+    const { organizationId, userId, roleId } =
+      await createOrgUserWithPermissions(t, ["loans.read", "loans.approve"], {
+        subscriptionTier: "pro",
+      });
+    const colleagueId = await addMember(t, organizationId, "approver", [
+      "loans.read",
+      "loans.approve",
+    ]);
+    await t.run(async (ctx) => {
+      for (const [loanNumber, daysAgo] of [
+        ["LN-SLA-1", 10],
+        ["LN-SLA-2", 8],
+        ["LN-SLA-3", 4],
+      ] as const) {
+        await ctx.db.insert("loans", {
+          organizationId,
+          loanNumber,
+          type: "outgoing",
+          lenderBorrowerName: "Harbour Museum",
+          startDate: NOW - daysAgo * DAY,
+          status: "pending",
+        });
+      }
+      await ctx.db.insert("workflowSlaConfigs", {
+        organizationId,
+        workflowType: "loan",
+        slaDays: 5,
+        warningDays: 2,
+        escalateToRoleId: roleId,
+        isActive: true,
+        createdBy: userId,
+        createdAt: NOW - 20 * DAY,
+      });
+    });
+
+    await t.mutation(internal.workflowSla.checkSlaBreaches, { organizationId });
+    vi.advanceTimersByTime(12 * 60 * 60 * 1000);
+    expect(
+      await t.mutation(internal.workflowSla.checkSlaBreaches, {
+        organizationId,
+      }),
+    ).toEqual({ breachesFound: 2, warningsSent: 1 });
+
+    for (const approverId of [userId, colleagueId]) {
+      expect(
+        (await notificationTypesFor(t, approverId, organizationId)).sort(),
+      ).toEqual(["sla_breach_loan", "sla_breach_loan", "sla_warning_loan"]);
+    }
+  });
 });
 
 describe("notification preferences belong to members", () => {
