@@ -253,6 +253,21 @@ export function searchTokens(text: string) {
     .filter((token) => token.length > 0);
 }
 
+/** Terms the search index reads from a query; it drops the rest unannounced. */
+const MAX_SEARCH_TERMS = 16;
+/** Longer words are left out of a search index query. */
+const MAX_SEARCH_TERM_LENGTH = 32;
+
+/**
+ * The words of a search the search index uses, so listing, bulk edits and
+ * exports all match on the same terms.
+ */
+export function searchQueryTerms(search: string) {
+  return searchTokens(search)
+    .filter((token) => token.length <= MAX_SEARCH_TERM_LENGTH)
+    .slice(0, MAX_SEARCH_TERMS);
+}
+
 /**
  * The first field, in document order, that a search term matches, as the
  * search index matches: any term may match, each one a whole word except
@@ -262,7 +277,7 @@ export function matchedObjectSearchField(
   collection: Doc<"collections">,
   search: string,
 ): ObjectSearchField | undefined {
-  const terms = searchTokens(search);
+  const terms = searchQueryTerms(search);
   const last = terms.pop();
   if (last === undefined) return undefined;
   const whole = new Set(terms);

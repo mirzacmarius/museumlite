@@ -75,6 +75,16 @@ test("a running edit that stopped reporting can be resumed", async () => {
   expect(state.resume).toHaveBeenCalledWith({ jobId: "job-1" });
 });
 
+test("a failed edit can be stopped as well as resumed, which clears its notice", async () => {
+  state.cancel.mockResolvedValue(null);
+  await renderOnPage(<BulkEditStatus job={job("failed", MINUTE)} />, "/en");
+
+  expect(screen.getByRole("button", { name: "Resume" })).toBeTruthy();
+  await userEvent.setup().click(screen.getByRole("button", { name: "Stop" }));
+
+  expect(state.cancel).toHaveBeenCalledWith({ jobId: "job-1" });
+});
+
 test("a failed resume says the action failed, not that the edit could not start", async () => {
   state.resume.mockRejectedValue(new Error("Server error"));
   await renderOnPage(<BulkEditStatus job={job("failed", MINUTE)} />, "/en");

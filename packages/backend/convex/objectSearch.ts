@@ -17,6 +17,11 @@ const BACKFILL_PAGE_SIZE = 50;
 const ORGANIZATIONS_PER_PAGE = 200;
 /** A backfill that reported nothing for this long is started again. */
 const BACKFILL_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+/**
+ * A run in progress reports at most this often: every searching list reads
+ * the backfill row for readiness, so each write re-runs them all.
+ */
+const BACKFILL_HEARTBEAT_MS = 10 * 60 * 1000;
 /** Distinct values offered per facet; each costs one indexed read. */
 const FACET_VALUE_LIMIT = 100;
 /** Option list rows read to label facet values as staff spelled them. */
@@ -154,6 +159,8 @@ export const backfillPage = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // A purge may remove the Organization while a run is in flight.
+    if ((await ctx.db.get(args.organizationId)) === null) return null;
     const state = await backfillState(ctx, args.organizationId);
     const now = Date.now();
     if (state && state.version !== OBJECT_SEARCH_DOCUMENT_VERSION) {
@@ -194,7 +201,8 @@ export const backfillPage = internalMutation({
       }
       return null;
     }
-    if (state) await ctx.db.patch(state._id, { startedAt: now });
+    if (state && state.startedAt < now - BACKFILL_HEARTBEAT_MS)
+      await ctx.db.patch(state._id, { startedAt: now });
     await ctx.scheduler.runAfter(0, internal.objectSearch.backfillPage, {
       organizationId: args.organizationId,
       cursor: page.continueCursor,
@@ -211,7 +219,7 @@ function needsBackfill(
   // Complete documents of an older version are rebuilt at once.
   if (state.completedAt !== undefined)
     return state.version !== OBJECT_SEARCH_DOCUMENT_VERSION;
-  // A run in progress reports on every page; a silent one was lost. A run
+  // A run in progress reports every few minutes; a silent one was lost. A run
   // begun under an older version restarts itself (see `backfillPage`).
   return state.startedAt < now - BACKFILL_STALE_AFTER_MS;
 }

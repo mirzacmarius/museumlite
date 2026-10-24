@@ -52,24 +52,6 @@ interface CollectionListFilters {
   filterCombinations?: "AND" | "OR";
 }
 
-function parseStoredStringList(value: string): string[] {
-  const trimmed = value.trim();
-  if (!trimmed) return [];
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed: unknown = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        return parsed.flatMap((item) =>
-          typeof item === "string" ? parseStoredStringList(item) : [],
-        );
-      }
-    } catch {
-      // Keep the raw value when it is not valid JSON.
-    }
-  }
-  return [trimmed];
-}
-
 /** Filter value for objects the dashboard does not count as on display. */
 const NOT_ON_DISPLAY_FILTER = "not_on_display";
 
@@ -83,15 +65,21 @@ function matchesDisplayStatus(
   return collection.displayStatus === filter;
 }
 
+/** Types match as recorded whatever the case, like the facets they come from. */
 function matchesObjectType(
   stored: string | undefined,
   filter: string,
 ): boolean {
-  if (!stored) return false;
-  if (stored === filter) return true;
-  const storedValues = parseStoredStringList(stored);
-  const filterValues = parseStoredStringList(filter);
-  return filterValues.some((value) => storedValues.includes(value));
+  const storedValues = new Set(
+    storedListValues(stored).flatMap((value) => foldFacetValue(value) ?? []),
+  );
+  if (storedValues.size === 0) return false;
+  const whole = foldFacetValue(stored);
+  if (whole !== undefined && whole === foldFacetValue(filter)) return true;
+  return storedListValues(filter).some((value) => {
+    const folded = foldFacetValue(value);
+    return folded !== undefined && storedValues.has(folded);
+  });
 }
 
 /** Filter only the bounded database page; never load an organization's relations. */

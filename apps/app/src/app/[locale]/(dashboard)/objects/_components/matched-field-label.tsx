@@ -8,7 +8,7 @@ export function MatchedFieldLabel({ field }: { field?: ObjectSearchField }) {
   const t = useScopedI18n("objects.search");
   if (!field) return null;
   return (
-    <span className="mt-0.5 block truncate text-[10px] text-indigo-700 dark:text-indigo-300">
+    <span className="mt-0.5 block break-words text-[10px] text-indigo-700 dark:text-indigo-300">
       {t("matchedIn", { field: t(`fields.${field}`) })}
     </span>
   );

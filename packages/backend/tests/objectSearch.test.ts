@@ -422,11 +422,15 @@ test("facet filters and values come from the records, with photographs and the c
     "slip",
     "terracotta",
   ]);
-  expect(facets.objectTypes.map((facet) => facet.value)).toEqual([
-    "coin",
-    "lamp",
-    "vessel",
+  expect(facets.objectTypes).toEqual([
+    { value: "coin", label: "coin" },
+    { value: "lamp", label: "lamp" },
+    { value: "vessel", label: "vessel" },
   ]);
+  // A type no option spells is offered as recorded, lower-cased; picking it
+  // still finds the Object.
+  expect(await catalog.numbers({ objectType: "vessel" })).toEqual(["G-1"]);
+  expect(await catalog.numbers({ objectType: "LAMP" })).toEqual(["R-1"]);
 });
 
 test("advanced filters combine conditions within a group and groups with each other", async () => {

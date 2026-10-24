@@ -171,8 +171,9 @@ export function BulkEditFieldDialog({
   const start = useMutation(api.bulkFieldEdits.start);
 
   const edit = editFromDraft(draft);
-  // Typing settles before the preview counts again.
-  const previewEdit = useDeferredValue(edit);
+  // Keeps typing responsive; the preview still counts again for each draft.
+  const deferredDraft = useDeferredValue(draft);
+  const previewEdit = editFromDraft(deferredDraft);
   const selectionTooLarge =
     scope.kind === "selection" &&
     scope.collectionIds.length > BULK_EDIT_MAX_SELECTION;

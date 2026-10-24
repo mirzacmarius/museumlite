@@ -31,8 +31,15 @@ import { requirePermission } from "./utils/permissions";
 
 /** Objects written per page; each write also updates its search document and audit entry. */
 const PAGE_SIZE = 25;
-/** Rows a preview reads for a filtered scope before it reports a lower bound. */
-const PREVIEW_ROWS = 1000;
+/**
+ * Rows a preview reads for a filtered scope before it reports a lower bound.
+ * Filtering costs several reads per row (open removals, groups, photographs,
+ * title probes) and a function may make at most 4,096, which convex-test does
+ * not enforce; inventory scope adds loan and entry reads per row, so it reads
+ * fewer, as exports do.
+ */
+const PREVIEW_ROWS = 200;
+const PREVIEW_ROWS_INVENTORY = 25;
 
 const EDIT_PERMISSION = "collections.update";
 
@@ -186,7 +193,12 @@ async function previewEdit(
     const page = await listCatalogPage(
       ctx,
       { ...args.scope.filters, organizationId: args.organizationId },
-      { numItems: PREVIEW_ROWS, cursor: null },
+      {
+        numItems: args.scope.filters.inventoryMetricScope
+          ? PREVIEW_ROWS_INVENTORY
+          : PREVIEW_ROWS,
+        cursor: null,
+      },
       { stableOrder: true },
     );
     rows = page.page;

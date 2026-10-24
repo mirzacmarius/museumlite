@@ -35,8 +35,9 @@ function useStalled(job: BulkEditView) {
 }
 
 /**
- * What a bulk edit has done so far, with Stop while it runs and Resume after
- * a failure or once a running edit stops reporting.
+ * What a bulk edit has done so far, with Stop while it runs or after a
+ * failure (which also clears the catalog notice) and Resume after a failure
+ * or once a running edit stops reporting.
  */
 export function BulkEditStatus({ job }: { job: BulkEditView }) {
   const t = useScopedI18n("objects.bulkEdit");
@@ -84,7 +85,7 @@ export function BulkEditStatus({ job }: { job: BulkEditView }) {
       ) : null}
       <PermissionGate permission="collections.update">
         <div className="flex gap-2">
-          {job.status === "running" ? (
+          {job.status === "running" || job.status === "failed" ? (
             <Button
               variant="outline"
               size="sm"

@@ -15,6 +15,7 @@ import {
   foldFacetValue,
   isObjectSearchReady,
   matchedObjectSearchField,
+  searchQueryTerms,
 } from "./objectSearchDocuments";
 
 export type CatalogSort = "newest" | "oldest" | "identifier";
@@ -68,7 +69,9 @@ async function filterPage(
  * One page of the catalog while searching: identifier prefix matches first on
  * the first page, then the search documents ranked by relevance, both passed
  * through the other filters. Later pages leave out the identifier matches
- * already listed, so no Object repeats.
+ * already listed, so no Object repeats. The search index ranks at most 1,024
+ * documents per query, so a very broad search lists fewer Objects than bulk
+ * edits and exports reach.
  */
 async function searchCatalogPage(
   ctx: Ctx,
@@ -99,7 +102,7 @@ async function searchCatalogPage(
     .query("objectSearchDocuments")
     .withSearchIndex("search_text", (q) => {
       let filter = q
-        .search("text", search)
+        .search("text", searchQueryTerms(search).join(" "))
         .eq("organizationId", args.organizationId);
       if (args.status) filter = filter.eq("status", args.status);
       if (args.hasImage !== undefined)
